@@ -1,6 +1,5 @@
-const { response } = require('express');
-
 require('dotenv').config();
+<<<<<<< HEAD
 
 // Remove all lowercase env usage, use UPPERCASE only
 let tableId = process.env.TABLE_ID;
@@ -38,38 +37,33 @@ function clearUserCache(phone) {
   cache.userTables.delete(phone);
   cache.userIds.delete(phone);
 }
+=======
+const db = require('./db');
+>>>>>>> 118c424 (new code)
 
 async function updateField(id, field_name, updatedValue) {
-  try {
-    const tableName = 'Test'; // Replace with your table name
-    const url = `https://api.airtable.com/v0/${baseId}/${tableId}/${id}`;
-    // console.log("Update URL ",url)
+    try {
+        const fieldMap = {
+            "Next Day": "next_day",
+            "Day Completed": "day_completed",
+            "Next Module": "next_module",
+            "Module Completed": "module_completed",
+            "Last_Msg": "last_msg",
+            "Question Responses": "question_responses",
+            "Responses": "responses",
+            "Interactive_Responses": "interactive_responses",
+            "Feedback": "feedback"
+        };
+        const dbField = fieldMap[field_name] || field_name;
 
-    const response = await fetch(url, {
-      method: 'PATCH',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        fields: {
-          [field_name]: updatedValue
-        }
-      })
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! Status: ${response.status}`);
+        await db.query(`UPDATE students SET ${dbField} = ? WHERE id = ?`, [updatedValue, id]);
+        console.log(`[DB] Record ${id} updated successfully: ${field_name} = ${updatedValue}`);
+    } catch (error) {
+        console.error('Error updating record in MySQL:', error);
     }
-
-    const data = await response.json();
-    console.log('Record updated successfully:');
-  } catch (error) {
-    console.error('Error updating record:', error);
-  }
 }
-// updateField("rec3UHUHucZVYTBoY", "Last_Msg", "hdhhdhdhdh")
 
+<<<<<<< HEAD
 async function getID(phone) {
   try {
     if (!phone) return null;
@@ -105,12 +99,25 @@ async function getID(phone) {
     console.error('getID error:', e);
     throw e;
   }
+=======
+async function getID(number) {
+    try {
+        const [rows] = await db.query('SELECT id FROM students WHERE phone = ?', [number]);
+        if (rows && rows.length > 0) {
+            return rows[0].id;
+        } else {
+            console.log(`[DB] No matching student record found for phone: ${number}`);
+            return null;
+        }
+    } catch (error) {
+        console.error('Error in getID:', error);
+        return null;
+    }
+>>>>>>> 118c424 (new code)
 }
 
-// Test function
-
-
 const totalDays = async (number) => {
+<<<<<<< HEAD
   try {
     // Get the course table name first
     const course_tn = await findTable(number);
@@ -199,401 +206,206 @@ const findTable = async (number) => {
     console.error('Error in findTable:', error);
     //throw error;
   }
+=======
+    try {
+        const course_tn = await findTable(number);
+        const [rows] = await db.query(
+            'SELECT COUNT(DISTINCT day_number) as count FROM course_content WHERE course_name = ?',
+            [course_tn]
+        );
+        return rows && rows.length > 0 ? rows[0].count : 0;
+    } catch (error) {
+        console.error('Error in totalDays:', error);
+        return 0;
+    }
 };
 
-
+const findTable = async (number) => {
+    try {
+        const [rows] = await db.query('SELECT course FROM students WHERE phone = ?', [number]);
+        if (rows && rows.length > 0 && rows[0].course) {
+            return rows[0].course;
+        }
+        return 'Mindset';
+    } catch (error) {
+        console.error('Error in findTable:', error);
+        return 'Mindset';
+    }
+>>>>>>> 118c424 (new code)
+};
 
 const findRecord = async (id) => {
-  const url = `https://api.airtable.com/v0/${baseId}/${tableId}/${id}`;
-
-  try {
-    const response = await fetch(url, {
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
-      }
-    });
-
-    if (!response.ok) {
-      const errorBody = await response.text();
-      throw new Error(`HTTP error! status: ${response.status}, body: ${errorBody}`);
+    try {
+        const [rows] = await db.query('SELECT question_responses FROM students WHERE id = ?', [id]);
+        if (rows && rows.length > 0) {
+            return rows[0].question_responses !== null ? rows[0].question_responses : 0;
+        }
+        return 0;
+    } catch (error) {
+        console.error('Error in findRecord:', error);
+        return 0;
     }
-
-    const data = await response.json();
-
-    const field_name = "Question Responses";
-    return data.fields[field_name];
-  } catch (error) {
-    console.error('Error in findRecord:', error);
-    // //throw error;
-  }
 };
 
 const findQuesRecord = async (id) => {
-
-  const url = `https://api.airtable.com/v0/${baseId}/${tableId}/${id}`;
-
-  try {
-    const response = await fetch(url, {
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
-      }
-    });
-
-    if (!response.ok) {
-      const errorBody = await response.text();
-      throw new Error(`HTTP error! status: ${response.status}, body: ${errorBody}`);
+    try {
+        const [rows] = await db.query('SELECT responses FROM students WHERE id = ?', [id]);
+        if (rows && rows.length > 0) {
+            return rows[0].responses !== null ? rows[0].responses : undefined;
+        }
+        return undefined;
+    } catch (error) {
+        console.error('Error in findQuesRecord:', error);
+        return undefined;
     }
-
-    const data = await response.json();
-    // console.log("Data ", data)
-
-    return data.fields.Responses;
-  } catch (error) {
-    console.error('Error in findQuesRecord:', error);
-    // //throw error;
-  }
 };
-
-
 
 const findTitle = async (currentDay, module_no, number) => {
-
-  try {
-    // First, get the course table name
-    const course_tn = await findTable(number);
-
-    const url = `https://api.airtable.com/v0/${baseId}/${course_tn}`;
-
-    const params = new URLSearchParams({
-      filterByFormula: `({Day} = ${currentDay})`,
-      view: 'Grid view'
-    });
-
-    const response = await fetch(`${url}?${params}`, {
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
-      }
-    });
-
-    if (!response.ok) {
-      const errorBody = await response.text();
-      throw new Error(`HTTP error! status: ${response.status}, body: ${errorBody}`);
-    }
-
-    const data = await response.json();
-
-    if (data.records && data.records.length > 0) {
-      for (const record of data.records) {
-        const titleField = `Module ${module_no} LTitle`;
-        const optionsField = `Module ${module_no} List`;
-
-        const title = record.fields[titleField];
-        const options = record.fields[optionsField];
-
-        if (title !== undefined) {
-          console.log(title, options.split("\n"));
-          return [title, options.split("\n")];
+    try {
+        const course_tn = await findTable(number);
+        const [rows] = await db.query(
+            `SELECT list_title, list_options 
+             FROM course_content 
+             WHERE course_name = ? AND day_number = ? AND module_number = ?`,
+            [course_tn, currentDay, module_no]
+        );
+        if (rows && rows.length > 0 && rows[0].list_title !== null) {
+            const title = rows[0].list_title;
+            const options = rows[0].list_options || '';
+            return [title, options.split('\n').filter(Boolean)];
         }
-      }
-      // If we've gone through all records and haven't returned, no matching title was found
-      return [0, 0];
-    } else {
-      return [0, 0];
+        return [0, 0];
+    } catch (error) {
+        console.error('Error in findTitle:', error);
+        return [0, 0];
     }
-  } catch (error) {
-    console.error('Error in findTitle:', error);
-    // //throw error;
-  }
 };
-
-
-
 
 const findInteractive = async (currentDay, module_no, number) => {
-
-  try {
-    // First, get the course table name
-    const course_tn = await findTable(number);
-
-    const url = `https://api.airtable.com/v0/${baseId}/${course_tn}`;
-
-    const params = new URLSearchParams({
-      filterByFormula: `({Day} = ${currentDay})`,
-      view: 'Grid view'
-    });
-
-    const response = await fetch(`${url}?${params}`, {
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
-      }
-    });
-
-    if (!response.ok) {
-      const errorBody = await response.text();
-      throw new Error(`HTTP error! status: ${response.status}, body: ${errorBody}`);
-    }
-
-    const data = await response.json();
-
-    if (data.records && data.records.length > 0) {
-      for (const record of data.records) {
-        const bodyField = `Module ${module_no} iBody`;
-        const buttonsField = `Module ${module_no} iButtons`;
-
-        const body = record.fields[bodyField];
-        const buttons = record.fields[buttonsField];
-
-        if (body !== undefined) {
-          return [body, buttons.split("\n")];
+    try {
+        const course_tn = await findTable(number);
+        const [rows] = await db.query(
+            `SELECT ibody, ibuttons 
+             FROM course_content 
+             WHERE course_name = ? AND day_number = ? AND module_number = ?`,
+            [course_tn, currentDay, module_no]
+        );
+        if (rows && rows.length > 0 && rows[0].ibody !== null) {
+            const body = rows[0].ibody;
+            const buttons = rows[0].ibuttons || '';
+            return [body, buttons.split('\n').filter(Boolean)];
         }
-      }
-      // If we've gone through all records and haven't returned, no matching body was found
-      return "No matching interactive content found"
-    } else {
-      return "No records found for the given day"
+        return "No matching interactive content found";
+    } catch (error) {
+        console.error('Error in findInteractive:', error);
+        return "No matching interactive content found";
     }
-  } catch (error) {
-    console.error('Error in findInteractive:', error);
-    // //throw error;
-  }
 };
-
 
 const findQuestion = async (currentDay, module_no, number) => {
- 
-
-  try {
-    // First, get the course table name
-    const course_tn = await findTable(number);
-
-    const url = `https://api.airtable.com/v0/${baseId}/${course_tn}`;
-
-    const params = new URLSearchParams({
-      filterByFormula: `({Day} = ${currentDay})`,
-      view: 'Grid view'
-    });
-
-    const response = await fetch(`${url}?${params}`, {
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
-      }
-    });
-
-    if (!response.ok) {
-      const errorBody = await response.text();
-      throw new Error(`HTTP error! status: ${response.status}, body: ${errorBody}`);
-    }
-
-    const data = await response.json();
-
-    if (data.records && data.records.length > 0) {
-      for (const record of data.records) {
-        const questionField = `Module ${module_no} Question`;
-        const body = record.fields[questionField];
-
-        if (body !== undefined) {
-          return body;
+    try {
+        const course_tn = await findTable(number);
+        const [rows] = await db.query(
+            `SELECT question 
+             FROM course_content 
+             WHERE course_name = ? AND day_number = ? AND module_number = ?`,
+            [course_tn, currentDay, module_no]
+        );
+        if (rows && rows.length > 0 && rows[0].question !== null) {
+            return rows[0].question;
         }
-      }
-      // If we've gone through all records and haven't returned, no matching question was found
-      return "No matching question found"
-    } else {
-      return "No records found for the given day";
+        return "No matching question found";
+    } catch (error) {
+        console.error('Error in findQuestion:', error);
+        return "No matching question found";
     }
-  } catch (error) {
-    console.error('Error in findQuestion:', error);
-    // //throw error;
-  }
 };
-
 
 const findLastMsg = async (number) => {
-
-  try {
-    const url = `https://api.airtable.com/v0/${baseId}/${tableId}`;
-
-    const params = new URLSearchParams({
-      filterByFormula: `({Phone} = "${number}")`,
-      view: 'Grid view'
-    });
-
-    const response = await fetch(`${url}?${params}`, {
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
-      }
-    });
-
-    if (!response.ok) {
-      console.error(`HTTP error! status: ${response.status}`);
-      return undefined;
+    try {
+        const [rows] = await db.query('SELECT last_msg FROM students WHERE phone = ?', [number]);
+        if (rows && rows.length > 0) {
+            return rows[0].last_msg !== null ? rows[0].last_msg : undefined;
+        }
+        return undefined;
+    } catch (error) {
+        console.error('Error in findLastMsg:', error);
+        return undefined;
     }
-
-    const data = await response.json();
-
-    if (data.records && data.records.length > 0) {
-      const lastMsg = data.records[0].fields.Last_Msg;
-      // console.log("Last msg of " + number, lastMsg);
-      return lastMsg !== undefined ? lastMsg : undefined;
-    }
-
-    return undefined;
-
-  } catch (error) {
-    console.error('Error in findLastMsg:', error);
-    return undefined;
-  }
 };
 
-
-
 const find_ContentField = async (field, currentDay, current_module, number) => {
- 
-  try {
-    // First, get the course table name
-    const course_tn = await findTable(number);
+    try {
+        const course_tn = await findTable(number);
+        const fieldMap = {
+            "Text": "module_text"
+        };
+        const dbField = fieldMap[field] || field;
 
-    const url = `https://api.airtable.com/v0/${baseId}/${course_tn}`;
+        const [rows] = await db.query(
+            `SELECT ${dbField} 
+             FROM course_content 
+             WHERE course_name = ? AND day_number = ? AND module_number = ?`,
+            [course_tn, currentDay, current_module]
+        );
 
-    const params = new URLSearchParams({
-      filterByFormula: `({Day} = ${currentDay})`,
-      view: 'Grid view'
-    });
-
-    const response = await fetch(`${url}?${params}`, {
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
-      }
-    });
-
-    if (!response.ok) {
-      console.error(`HTTP error! status: ${response.status}`);
-      return 0;
-    }
-
-    const data = await response.json();
-
-    if (data.records && data.records.length > 0) {
-      for (const record of data.records) {
-        const fieldName = `Module ${current_module} ${field}`;
-        const body = record.fields[fieldName];
-
-        if (body !== undefined) {
-          // console.log("Feedback  " + number, body);
-          return body.split("\n");
+        if (rows && rows.length > 0 && rows[0][dbField] !== null) {
+            return rows[0][dbField].split('\n');
         }
-      }
+        return 0;
+    } catch (error) {
+        console.error('Error in find_ContentField:', error);
+        return 0;
     }
-
-    console.log("Feedback  0");
-    return 0;
-
-  } catch (error) {
-    console.error('Error in find_ContentField:', error);
-    return 0;
-  }
 };
 
 const findField = async (field, number) => {
- 
-  try {
-    const url = `https://api.airtable.com/v0/${baseId}/${tableId}`;
-
-    const params = new URLSearchParams({
-      filterByFormula: `({Phone} = "${number}")`,
-      view: 'Grid view'
-    });
-
-    const response = await fetch(`${url}?${params}`, {
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
-      }
-    });
-
-    if (!response.ok) {
-      console.error(`HTTP error! status: ${response.status}`);
-      return 0;
+    try {
+        const fieldMap = {
+            "Next Day": "next_day",
+            "Day Completed": "day_completed",
+            "Next Module": "next_module",
+            "Module Completed": "module_completed",
+            "Last_Msg": "last_msg",
+            "Question Responses": "question_responses",
+            "Responses": "responses",
+            "Interactive_Responses": "interactive_responses",
+            "Feedback": "feedback",
+            "Course": "course"
+        };
+        const dbField = fieldMap[field] || field;
+        const [rows] = await db.query(`SELECT ${dbField} FROM students WHERE phone = ?`, [number]);
+        if (rows && rows.length > 0) {
+            return rows[0][dbField] !== null ? rows[0][dbField] : 0;
+        }
+        return 0;
+    } catch (error) {
+        console.error('Error in findField:', error);
+        return 0;
     }
-
-    const data = await response.json();
-
-    if (data.records && data.records.length > 0) {
-      const body = data.records[0].fields[field];
-      return body !== undefined ? body : 0;
-    }
-
-    return 0;
-
-  } catch (error) {
-    console.error('Error in findField:', error);
-    return 0;
-  }
 };
 
 const findAns = async (currentDay, module_no, number) => {
-
-  try {
-    // First, get the course table name
-    const course_tn = await findTable(number);
-
-    const url = `https://api.airtable.com/v0/${baseId}/${course_tn}`;
-
-    const params = new URLSearchParams({
-      filterByFormula: `({Day} = ${currentDay})`,
-      view: 'Grid view'
-    });
-
-    const response = await fetch(`${url}?${params}`, {
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
-      }
-    });
-
-    if (!response.ok) {
-      console.error(`HTTP error! status: ${response.status}`);
-      return null;
+    try {
+        const course_tn = await findTable(number);
+        const [rows] = await db.query(
+            `SELECT correct_answer 
+             FROM course_content 
+             WHERE course_name = ? AND day_number = ? AND module_number = ?`,
+            [course_tn, currentDay, module_no]
+        );
+        if (rows && rows.length > 0 && rows[0].correct_answer !== null) {
+            return rows[0].correct_answer;
+        }
+        return null;
+    } catch (error) {
+        console.error('Error in findAns:', error);
+        return null;
     }
-
-    const data = await response.json();
-
-    if (data.records && data.records.length > 0) {
-      const ansField = `Module ${module_no} Ans`;
-      const body = data.records[0].fields[ansField];
-      return body !== undefined ? body : null;
-    }
-
-    return null;
-
-  } catch (error) {
-    console.error('Error in findAns:', error);
-    return null;
-  }
 };
 
-// async function test() {
-//   try {
-//     // const id = await getID("918779171731")
-//     let rec = await findField("Course", "918779171731")
-//     console.log("Rec ", rec)
-
-//     // console.log('Found ID:', id);
-//   } catch (error) {
-//     console.error('Error in test function:', error);
-//   }
-// }
-
-// // Run the test
-// test();
-
 module.exports = {
+<<<<<<< HEAD
   findTable,
   totalDays,
   updateField,
@@ -608,4 +420,19 @@ module.exports = {
   findAns,
   find_ContentField,
   clearUserCache
+=======
+    findTable,
+    totalDays,
+    updateField,
+    findRecord,
+    findTitle,
+    findInteractive,
+    findQuestion,
+    findQuesRecord,
+    getID,
+    findLastMsg,
+    findField,
+    findAns,
+    find_ContentField
+>>>>>>> 118c424 (new code)
 };

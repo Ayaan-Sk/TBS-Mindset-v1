@@ -1,212 +1,126 @@
-# 📱 TBS WhatsApp Learning Management System
+# WhatsApp & Airtable Learning Flow Bot (TBS-Mindset-v1)
 
-An automated WhatsApp-based learning platform that delivers structured courses daily, tracks user progress, and manages interactive content through Airtable integration.
-
-## 🚀 Features
-
-- **🤖 Automated User Registration**: New users are automatically registered when they message
-- **📅 Daily Course Delivery**: Content delivered automatically at 9 AM IST via cron jobs
-- **📊 Progress Tracking**: Complete user journey tracking in Airtable
-- **💬 Interactive Messages**: Lists, buttons, questions, and media support
-- **🔄 Smart Flow Management**: Automatic progression through modules and days
-- **📈 Analytics Ready**: All interactions stored for analysis
-- **⚡ Real-time Processing**: Instant webhook-based message handling
-
-## 🏗️ System Architecture
-
-```
-WhatsApp → WATI API → Azure Web App → Airtable Database
-                           ↓
-                    Cron Jobs (Daily 9 AM)
-```
-
-## 🛠️ Tech Stack
-
-- **Backend**: Node.js + Express
-- **Database**: Airtable (2 tables)
-- **WhatsApp API**: WATI
-- **Deployment**: Azure Web Apps
-- **Automation**: Node-cron
-- **CI/CD**: GitHub Actions
-
-## 📋 Quick Start
-
-1. **Clone Repository**:
-```bash
-git clone https://github.com/yourusername/tbs-whatsapp-learning.git
-cd tbs-whatsapp-learning
-npm install
-```
-
-2. **Environment Setup**:
-```bash
-cp .env.template .env
-# Edit .env with your credentials
-```
-
-3. **Local Development**:
-```bash
-npm run dev
-```
-
-4. **Deploy to Azure**:
-```bash
-git push origin main
-# GitHub Actions will auto-deploy
-```
-
-## 📚 Documentation
-
-- **[Complete Deployment Guide](DEPLOYMENT_GUIDE.md)** - Step-by-step setup instructions
-- **[API Documentation](docs/API.md)** - Endpoint specifications
-- **[Database Schema](docs/DATABASE.md)** - Airtable structure
-
-## 🔑 Key Environment Variables
-
-```env
-# WATI Configuration
-URL=your-instance.wati.io
-API=Bearer your_wati_token
-
-# Airtable Configuration  
-BASE_ID=appXXXXXXXXXXXXXX
-TABLE_ID=tblXXXXXXXXXXXXXX
-CONTENT_TABLE_ID=tblYYYYYYYYYYYYYY
-PERSONAL_ACCESS_TOKEN=patXXXXXXXXXXXXXX...
-
-# Server Configuration
-PORT=3000
-WEBHOOK_URL=https://your-app.azurewebsites.net
-```
-
-## 🎯 Core Workflows
-
-### New User Registration
-1. User sends first WhatsApp message
-2. System checks if user exists in Airtable
-3. If new, creates user record with default settings
-4. Sends welcome message with course information
-
-### Daily Course Delivery  
-1. Cron job runs at 9 AM IST daily
-2. Queries Airtable for users ready for new content (`Next Module = 0`)
-3. Sends structured course content (text, media, interactions)
-4. Updates user progress automatically
-
-### Interactive Learning Flow
-1. User receives content with questions/options
-2. System processes responses and stores in Airtable
-3. Automatically progresses to next module/day
-4. Sends completion messages and next steps
-
-## 📊 Monitoring Endpoints
-
-- **Health Check**: `GET /ping` - Server status
-- **System Status**: `GET /status` - Database connectivity
-- **Manual Trigger**: `GET /trigger-daily` - Test course delivery
-- **Send Course**: `POST /send-course` - Target specific user
-
-## 🎛️ Admin Features
-
-### Manual Controls
-```bash
-# Trigger daily delivery immediately
-curl https://your-app.azurewebsites.net/trigger-daily
-
-# Send course to specific user
-curl -X POST https://your-app.azurewebsites.net/send-course \
-  -H "Content-Type: application/json" \
-  -d '{"phone": "1234567890", "day": 1, "module": 0}'
-```
-
-### Analytics Queries
-- User registration trends
-- Course completion rates  
-- Module engagement metrics
-- Response analysis
-
-## 🔍 Troubleshooting
-
-### Common Issues
-
-**Users not receiving messages?**
-- Check WATI API status and credits
-- Verify webhook URL in WATI dashboard
-- Test Azure app health: `/ping` endpoint
-
-**Cron jobs not running?**
-- Verify Azure app is always-on (paid tiers)
-- Check timezone settings (`TZ=Asia/Kolkata`)
-- Monitor logs at scheduled times
-
-**Database errors?**
-- Validate Airtable Personal Access Token
-- Check base and table IDs
-- Test connection: `/status` endpoint
-
-## 🚀 Production Deployment
-
-### Prerequisites
-- WATI WhatsApp Business account
-- Airtable workspace with proper schema
-- Azure subscription
-- GitHub repository
-
-### Deployment Steps
-1. Set up Airtable database structure
-2. Configure WATI webhook URL
-3. Deploy to Azure via GitHub Actions
-4. Configure environment variables
-5. Test complete user journey
-
-## 📈 Scaling Considerations
-
-**For 100+ users**: Upgrade Azure plan, implement rate limiting
-**For 1000+ users**: Move to Azure Functions, add message queuing
-**For enterprise**: Implement microservices, Redis caching, monitoring
-
-## 🛡️ Security
-
-- Environment variables for all secrets
-- Webhook signature validation
-- Rate limiting on API endpoints
-- Regular token rotation
-- Azure Key Vault integration (recommended)
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit changes (`git commit -m 'Add amazing feature'`)
-4. Push to branch (`git push origin feature/amazing-feature`)
-5. Open Pull Request
-
-## 📄 License
-
-This project is licensed under the ISC License - see the [LICENSE](LICENSE) file for details.
-
-## 🆘 Support
-
-- **Documentation**: See [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)
-- **Issues**: GitHub Issues tab
-- **Email**: support@yourcompany.com
-
-## 📝 Changelog
-
-### v2.0.0 (Current)
-- ✅ Automated user registration
-- ✅ Daily cron job delivery
-- ✅ Complete Azure deployment setup
-- ✅ Enhanced error handling and logging
-- ✅ Health monitoring endpoints
-
-### v1.0.0
-- ✅ Basic WhatsApp integration
-- ✅ Manual content delivery
-- ✅ Airtable storage
+A Node.js and Express-based WhatsApp chatbot integrated with Airtable to deliver structured courses, check learner progress, manage quizzes, and record feedback. It leverages the Wati WhatsApp API for interactive customer communication and dynamic layouts.
 
 ---
 
-**Built with ❤️ for automated learning delivery**
+## 🚀 Key Features
 
-# Deployment fix Wed Aug 27 04:39:10 UTC 2025
+*   **Structured Content Delivery**: Automatically parses and pushes daily course material and interactive modules.
+*   **Interactive UI elements**: Sends WhatsApp interactive buttons, list options, and session media.
+*   **Airtable Integration**: Direct API fetch interface to fetch, update, and manage learner information, days completed, and feedback in real-time.
+*   **Split-Message Flow**: Splits long modules with special placeholders (e.g., `#` or `Image`) and spaces messages dynamically.
+*   **Robust Session Error Handling**: Safely parses callback payloads and network responses without crashing.
+
+---
+
+## 📂 Project Architecture
+
+Here is how the core files interact with each other:
+
+```
+                      +-------------------+
+                      |   Wati Webhook    |
+                      +---------+---------+
+                                | (POST /web)
+                                v
+                      +-------------------+
+                      |     server.js     |
+                      +----+---------+----+
+                           |         |
+          +----------------+         +-----------------+
+          |                                            |
+          v                                            v
++-------------------+                        +-------------------+
+|      test.js      +----------------------->|     update.js     |
+| (Flow Controller) |   (Airtable Helpers)   | (Direct Rest API) |
++----+---------+----+                        +---------+---------+
+     |         |                                       |
+     |         |                                       v
+     |         |                             +-------------------+
+     |         |                             |   Airtable REST   |
+     |         |                             +-------------------+
+     v         v
++----+----+  +-+-------+
+| wati.js |  |image.js |
++----+----+  +----+----+
+     |            |
+     |            | (Media Fetch & Push)
+     v            v
++----+------------+----+
+|      Wati API        |
++----------------------+
+```
+
+### Module Breakdown:
+
+*   **[server.js](file:///c:/Users/AA/Desktop/ekatra/TBS-Mindset-v1/server.js)**: Configures the Express server. Listens to Wati's incoming message webhook (`/web`), evaluates keywords like *Let's Begin*, *Start Day*, or *Next.*, and delegates actions.
+*   **[test.js](file:///c:/Users/AA/Desktop/ekatra/TBS-Mindset-v1/test.js)**: Controls course flow. It evaluates if quiz answers are correct/incorrect, triggers multi-step content, delays split messages, and handles student progress updates.
+*   **[update.js](file:///c:/Users/AA/Desktop/ekatra/TBS-Mindset-v1/update.js)**: Contains high-performance wrapper methods communicating directly with Airtable's REST endpoint via modern HTTP `fetch` calls.
+*   **[wati.js](file:///c:/Users/AA/Desktop/ekatra/TBS-Mindset-v1/wati.js)**: Interface library to communicate with the Wati API for sending regular text, session media, dynamic interactive buttons, interactive lists, and custom templates.
+*   **[image.js](file:///c:/Users/AA/Desktop/ekatra/TBS-Mindset-v1/image.js)**: Fetches media attachment URLs from Airtable course records and feeds raw binary streams to Wati's file upload API.
+
+---
+
+## 🛠️ Installation & Setup
+
+### 1. Prerequisites
+Ensure you have **Node.js** (v18 or higher recommended since it uses native `fetch`) and `npm` installed.
+
+### 2. Clone and Install Dependencies
+Navigate to the directory and install dependencies:
+```bash
+npm install
+```
+
+### 3. Environment Variables Setup
+Copy the `.env.example` file to create your `.env` configuration:
+```bash
+copy .env.example .env
+```
+
+Open `.env` and populate the key configurations:
+```ini
+# Express Server Port
+PORT=3000
+
+# Wati WhatsApp API
+URL=your-wati-subdomain.wati.io
+API=Bearer YOUR_WATI_ACCESS_TOKEN
+
+# Airtable Credentials
+personal_access_token=pat...
+baseId=app...
+tableId=tblStudentTable
+content_tableID=tblContentTable
+
+# Legacy Airtable SDK Config (support for image.js)
+apiKey=pat...
+base=app...
+```
+
+---
+
+## 🏎️ Running the Code
+
+### Development Mode (with hot-reloading)
+Runs the server using `nodemon`, restarting automatically on file changes:
+```bash
+npm start
+```
+
+### Production Mode
+Runs the standard node process:
+```bash
+node server.js
+```
+
+---
+
+## 🔧 Recently Fixed Issues
+
+We have resolved a couple of stability and configuration issues in the codebase:
+
+1.  **Unsafe Wati Response Parsing**: Fixed issues in `wati.js` where `JSON.parse(response.body)` was executed directly on unverified network responses. If a network issue occurred or Wati returned an empty body, the application would crash. This is now wrapped in stable try-catch blocks with local scoping (`const`/`let`) to avoid memory pollution.
+2.  **Inconsistent dotenv Initialization**: Standardized `require('dotenv').config()` across `server.js`, `wati.js`, and `image.js` to search the standard root directory instead of hardcoded `./env` relative parameters, ensuring consistent environment variable resolution.
+3.  **Duplicate Require Declaration**: Cleaned up double declarations of the `request` package import at the top of `wati.js`.

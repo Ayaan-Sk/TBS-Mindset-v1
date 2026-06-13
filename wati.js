@@ -1,7 +1,10 @@
 var request = require('request');
 require('dotenv').config();
+<<<<<<< HEAD
 
 var request = require('request');
+=======
+>>>>>>> 118c424 (new code)
 
 const getMessages = async (senderID, at) => {
     return new Promise((resolve, reject) => {
@@ -112,10 +115,21 @@ const sendText = async (msg, senderID) => {
         }
     };
     request(options, function (error, response) {
-        body = JSON.parse(response.body)
-        result = body.result
-        //console.log(typeof result)
-        if (error) { console.log(error) }
+        if (error) {
+            console.error("WATI sendText request error:", error);
+            return;
+        }
+        if (!response || !response.body) {
+            console.error("WATI sendText empty response");
+            return;
+        }
+        try {
+            const body = JSON.parse(response.body);
+            const result = body.result;
+            //console.log(typeof result)
+        } catch (e) {
+            console.error("WATI sendText parsing error:", e, "Body:", response.body);
+        }
     });
 }
 const sendListInteractive = async (data, body, btnText, senderID) => {
@@ -202,13 +216,24 @@ async function sendTemplateMessage(day, template_name, senderID) {
 
     };
     request(options, function (error, response) {
-        body = JSON.parse(response.body)
-        result = body.result
-        //console.log(typeof result)
-        if (error || result == false)
-            console.log("WATI error " + response.body)
-
-        console.log("Res " + result);
+        if (error) {
+            console.error("WATI sendTemplateMessage request error:", error);
+            return;
+        }
+        if (!response || !response.body) {
+            console.error("WATI sendTemplateMessage empty response");
+            return;
+        }
+        try {
+            const body = JSON.parse(response.body);
+            const result = body.result;
+            if (result === false) {
+                console.log("WATI error " + response.body);
+            }
+            console.log("Res " + result);
+        } catch (e) {
+            console.error("WATI sendTemplateMessage parsing error:", e, "Body:", response.body);
+        }
     });
 }
 

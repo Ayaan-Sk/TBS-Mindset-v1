@@ -3,14 +3,24 @@ if (process.env.NODE_ENV !== 'production') dotenv.config({ path: './.env' });
 
 // now require project modules that read env at import time
 const express = require('express');
+<<<<<<< HEAD
 const cron = require('node-cron');
 const test = require('./test');
 const WA = require('./wati');
 const airtable = require('./update');
+=======
+require('dotenv').config();
+const test = require('./test');
+const WA = require('./twilio');
+const airtable = require("./update")
+// const outro = require('./outroflow');
+>>>>>>> 118c424 (new code)
 
 const webApp = express();
 webApp.use(express.json());
+webApp.use(express.urlencoded({ extended: true }));
 
+<<<<<<< HEAD
 // User Registration Handler
 async function handleNewUser(senderID, userName = "Unknown", res) {
     try {
@@ -201,6 +211,88 @@ webApp.post('/web', async (req, res) => {
     } catch (error) {
         console.error('❌ Error in webhook handler:', error);
         res.status(500).send('Internal server error');
+=======
+// Twilio webhook verification endpoint (Not strictly required for Twilio, but kept for compatibility / ping tests)
+webApp.head('/web', (req, res) => {
+    res.status(200).end();
+});
+
+// Route for Webhook (Twilio WhatsApp / SMS or fallback)
+webApp.post('/web', async (req, res) => {
+    let senderID;
+    let keyword = '';
+    let listReplyTitle = null;
+
+    console.log("Webhook payload received:", JSON.stringify(req.body, null, 2));
+
+    // Twilio sends Form variables: From and Body
+    const rawFrom = req.body.From; // e.g. "whatsapp:+918779171731" or "+918779171731"
+    const rawBody = req.body.Body; // e.g. "Next." or "Start Day"
+
+    if (rawFrom) {
+        // Strip out 'whatsapp:' prefix and any leading '+' to get the pure digit phone number
+        senderID = rawFrom.replace('whatsapp:', '').replace('+', '').trim();
+        keyword = (rawBody || '').trim();
+    } else {
+        // Fallback to Wati JSON payload structure if rawFrom is not provided
+        senderID = req.body.waId;
+        keyword = (req.body.text || '').trim();
+    }
+
+    if (!senderID) {
+        console.log("No senderID found in request.");
+        return res.status(200).end();
+    }
+
+    let id = await airtable.getID(senderID).then().catch(e => console.log(e))
+    let last_msg = await airtable.findLastMsg(senderID).then().catch(e => console.log("last msg error " + e))
+    let currentDay = await airtable.findField("Next Day", senderID).then().catch(e => console.log("current day error" + e))
+    let current_module = await airtable.findField("Next Module", senderID).then().catch(e => console.log("current day error" + e))
+    console.log("Sender ID:", senderID, "Current Day:", currentDay, "Current Module:", current_module)
+
+    // Handle list/quiz responses
+    // Intelligently check if Twilio message text matches a list option or interactive button option
+    if (currentDay && current_module) {
+        try {
+            // Check list module options
+            const listData = await airtable.findTitle(currentDay, current_module, senderID).then().catch(e => console.log("findTitle error", e));
+            if (listData && Array.isArray(listData[1])) {
+                const options = listData[1];
+                const matchedOption = options.find(opt => opt.trim().toLowerCase() === keyword.toLowerCase());
+                if (matchedOption) {
+                    listReplyTitle = matchedOption;
+                    console.log(`Matched Twilio keyword "${keyword}" to list option: "${matchedOption}"`);
+                }
+            }
+
+            // Check interactive button options if not already matched
+            if (!listReplyTitle) {
+                const interactiveData = await airtable.findInteractive(currentDay, current_module, senderID).then().catch(e => console.log("findInteractive error", e));
+                if (interactiveData && Array.isArray(interactiveData[1])) {
+                    const options = interactiveData[1];
+                    const matchedOption = options.find(opt => opt.trim().toLowerCase() === keyword.toLowerCase());
+                    if (matchedOption) {
+                        listReplyTitle = matchedOption;
+                        console.log(`Matched Twilio keyword "${keyword}" to interactive option: "${matchedOption}"`);
+                    }
+                }
+            }
+        } catch (e) {
+            console.error("Error matching Twilio reply to options:", e);
+        }
+    }
+
+    // Support old Wati listReply JSON structure if sent
+    if (listReplyTitle == null && req.body.listReply != null) {
+        let reply = JSON.parse(JSON.stringify(req.body.listReply))
+        listReplyTitle = reply.title;
+    }
+
+    if (listReplyTitle != null) {
+        console.log("List msg / Match:", listReplyTitle);
+        await test.store_responses(senderID, listReplyTitle)
+            .then().catch(e => console.log("Finish List error " + e))
+>>>>>>> 118c424 (new code)
     }
 });
 

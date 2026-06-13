@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 const Airtable = require('airtable');
 require('dotenv').config();
 const base = new Airtable({ apiKey: process.env.PERSONAL_ACCESS_TOKEN }).base(process.env.BASE_ID);
@@ -16,10 +17,19 @@ let student_table = process.env.TABLE_ID;
 //Update Day completed field and next day field in Test's table for the given phone number 
 //Called on Finish day keyword
 
-async function markDayComplete(number) {
- 
+=======
+require('dotenv').config();
+const db = require('./db');
+const WA = require('./twilio');
+const us = require('./update');
+const sendContent = require('./image');
 
+// Update Day completed field and next day field in students table for the given phone number 
+// Called on Finish day keyword
+>>>>>>> 118c424 (new code)
+async function markDayComplete(number) {
     try {
+<<<<<<< HEAD
         const url = `https://api.airtable.com/v0/${BASE_ID}/${student_table}`;
 
         const params = new URLSearchParams({
@@ -41,21 +51,25 @@ async function markDayComplete(number) {
         const data = await response.json();
 
         if (!data.records || data.records.length === 0) {
+=======
+        const [records] = await db.query('SELECT * FROM students WHERE phone = ?', [number]);
+        if (records.length === 0) {
+>>>>>>> 118c424 (new code)
             console.log("No records found for the given number");
             return;
         }
 
-        const record = data.records[0];
+        const record = records[0];
         const id = record.id;
-        const name = record.fields.Name;
-        const course = record.fields.Course;
-        const comp_day = Number(record.fields["Next Day"]);
+        const name = record.name;
+        const comp_day = Number(record.next_day);
         const nextDay = comp_day + 1;
 
         const total_days = await us.totalDays(number);
 
         if (comp_day <= total_days) {
             console.log("Entered markDayComplete");
+<<<<<<< HEAD
 
             const updateFields = {
                 "Next Day": nextDay,
@@ -76,9 +90,16 @@ async function markDayComplete(number) {
             if (!updateResponse.ok) {
                 throw new Error(`HTTP error! status: ${updateResponse.status}`);
             }
+=======
+            await db.query(
+                `UPDATE students 
+                 SET next_day = ?, day_completed = ?, next_module = 1, module_completed = 0 
+                 WHERE id = ?`,
+                [nextDay, comp_day, id]
+            );
+>>>>>>> 118c424 (new code)
 
             console.log("Complete Day " + comp_day);
-
             if (nextDay == total_days + 1) {
                 console.log("Executing Outro for ", name, nextDay);
             }
@@ -88,10 +109,10 @@ async function markDayComplete(number) {
     }
 }
 
-// Find  current day content and called on in sendContent method
+// Find current day content and complete day trigger
 async function findDay(currentDay, number) {
-  
     try {
+<<<<<<< HEAD
         const course_tn = await us.findTable(number);
         console.log(`Table name of ${number} is ${course_tn}`);
 
@@ -122,44 +143,35 @@ async function findDay(currentDay, number) {
 
         const record = data.records[0];
         const day = record.fields.Day;
+=======
+>>>>>>> 118c424 (new code)
         const id = await us.getID(number);
         const total_days = await us.totalDays(number);
 
-        console.log("Entered findDay module");
+        console.log("Entered findDay module for Day:", currentDay);
 
-        if (currentDay == 4) {
-            const hTxt = `Congratulations on completing Day ${day}!`;
+        if (currentDay == total_days) {
+            const hTxt = `Congratulations on completing Day ${currentDay}!`;
             const bTxt = `_powered by ekatra.one_`;
-            const btnTxt = "Finish Day " + day;
 
-            console.log("5. Updating last message");
             await us.updateField(id, "Last_Msg", hTxt);
-
             WA.sendText(`${hTxt} \n${bTxt}`, number);
             await markDayComplete(number);
 
             setTimeout(() => {
-                WA.sendText(`Would you like another learner to join you? Invite your friends to take the course! 
-                
-https://bit.ly/TBS-Referral`, number);
+                WA.sendText(`Would you like another learner to join you? Invite your friends to take the course! \n\nhttps://bit.ly/TBS-Referral`, number);
             }, 5000);
         } else {
-            let next_day = day + 1;
-            const hTxt = `Congratulations on completing Day ${day}!`;
+            let next_day = currentDay + 1;
+            const hTxt = `Congratulations on completing Day ${currentDay}!`;
             const bTxt = `You will receive Day ${next_day} modules tomorrow. \n\n_powered by ekatra.one_`;
-            const btnTxt = "Finish Day " + day;
 
-            console.log("6. Updating last message");
             await us.updateField(id, "Last_Msg", hTxt);
-
-            console.log("2. Delay of Finish Day");
             WA.sendText(`${hTxt} \n${bTxt}`, number);
             await markDayComplete(number);
 
             setTimeout(() => {
-                WA.sendText(`Would you like another learner to join you? Invite your friends to take the course! 
-
-https://bit.ly/TBS-Referral`, number);
+                WA.sendText(`Would you like another learner to join you? Invite your friends to take the course! \n\nhttps://bit.ly/TBS-Referral`, number);
             }, 5000);
         }
     } catch (error) {
@@ -169,9 +181,10 @@ https://bit.ly/TBS-Referral`, number);
 
 async function sendList(currentDay, module_No, number) {
     try {
-        const course_tn = await us.findTable(number);
         const id = await us.getID(number);
+        const [title, options] = await us.findTitle(currentDay, module_No, number);
 
+<<<<<<< HEAD
         const url = `https://api.airtable.com/v0/${BASE_ID}/${course_tn}`;
 
         const params = new URLSearchParams({
@@ -188,46 +201,42 @@ async function sendList(currentDay, module_No, number) {
 
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
+=======
+        if (title) {
+            console.log("Executing List");
+            const d = options.map(row => ({ title: row }));
+            await us.updateField(id, "Last_Msg", title);
+            WA.sendListInteractive(d, title, "Options", number);
+>>>>>>> 118c424 (new code)
         }
-
-        const data = await response.json();
-
-        if (!data.records || data.records.length === 0) {
-            console.log("No records found for the given day");
-            return;
-        }
-
-        const record = data.records[0];
-        const module_title = record.fields[`Module ${module_No} LTitle`];
-        const module_list = record.fields[`Module ${module_No} List`];
-
-        console.log("Executing List");
-        const options = module_list.split("\n").filter(n => n);
-
-        const d = options.map(row => ({ title: row }));
-
-        console.log("8. Updating");
-        await us.updateField(id, "Last_Msg", module_title);
-
-        WA.sendListInteractive(d, module_title, "Options", number);
     } catch (error) {
         console.error('Error in sendList:', error);
     }
 }
 
 async function sendIMsg(currentDay, module_No, number) {
+<<<<<<< HEAD
     var course_tn = await us.findTable(number);
 
     const response = await fetch(`https://api.airtable.com/v0/${BASE_ID}/${course_tn}?filterByFormula=({Day} = ${currentDay})&view=Grid view`, {
         headers: {
             Authorization: `Bearer ${API_KEY}`
+=======
+    try {
+        const res = await us.findInteractive(currentDay, module_No, number);
+        if (Array.isArray(res)) {
+            const [body, buttons] = res;
+            console.log("Executing Interactive ");
+            const data = buttons.map(option => ({ text: option }));
+            setTimeout(() => {
+                WA.sendDynamicInteractiveMsg(data, body, number);
+            }, 35000);
+>>>>>>> 118c424 (new code)
         }
-    });
-
-    if (!response.ok) {
-        console.error("Error fetching records:", response.statusText);
-        return;
+    } catch (error) {
+        console.error('Error in sendIMsg:', error);
     }
+<<<<<<< HEAD
 
     const data = await response.json();
     const records = data.records;
@@ -266,13 +275,31 @@ async function sendQues(currentDay, module_No, number) {
     const response = await fetch(`https://api.airtable.com/v0/${BASE_ID}/${course_tn}?filterByFormula=({Day} = ${currentDay})&view=Grid view`, {
         headers: {
             Authorization: `Bearer ${API_KEY}`
-        }
-    });
+=======
+}
 
-    if (!response.ok) {
-        console.error("Error fetching records:", response.statusText);
-        return;
+async function sendQues(currentDay, module_No, number) {
+    try {
+        const id = await us.getID(number);
+        const module_ques = await us.findQuestion(currentDay, module_No, number);
+
+        if (module_ques && module_ques !== "No matching question found") {
+            console.log("Executing Question ");
+            await us.updateField(id, "Last_Msg", `Q: ${module_ques}`);
+
+            setTimeout(() => {
+                WA.sendText(module_ques, number);
+            }, 2000);
+
+            setTimeout(() => {
+                WA.sendText("⬇⁣", number);
+            }, 3000);
+>>>>>>> 118c424 (new code)
+        }
+    } catch (error) {
+        console.error('Error in sendQues:', error);
     }
+<<<<<<< HEAD
 
     const data = await response.json();
     const records = data.records;
@@ -295,14 +322,21 @@ async function sendQues(currentDay, module_No, number) {
             WA.sendText("⬇⁣", number);
         }, 3000);
     }
+=======
+>>>>>>> 118c424 (new code)
 }
 
-
-// store_responses(918779171731, "No")
 async function store_responses(number, value) {
-    let course_tn = await us.findTable(number);
-    console.log(value);
+    try {
+        const [records] = await db.query('SELECT * FROM students WHERE phone = ?', [number]);
+        if (records.length === 0) return;
+        const record = records[0];
+        const id = record.id;
+        const currentModule = record.next_module;
+        const currentDay = record.next_day;
+        const last_msg = record.last_msg;
 
+<<<<<<< HEAD
     const response = await fetch(`https://api.airtable.com/v0/${BASE_ID}/${student_table}?filterByFormula=({Phone} = "${number}")&view=Grid view`, {
         headers: {
             Authorization: `Bearer ${API_KEY}`
@@ -367,77 +401,32 @@ async function store_responses(number, value) {
                 newValues = `${existingValues} \n\nQ: ${title} \nA: ${value}`;
             }
             if (existingValues.toString().includes(title)) {
+=======
+        const [title, options] = await us.findTitle(currentDay, currentModule, number);
+        const correct_ans = await us.findAns(currentDay, currentModule, number);
+
+        if (correct_ans == null) {
+            let existingValues = record.question_responses || "";
+            let newValues = existingValues 
+                ? `${existingValues} \n\nQ: ${title} \nA: ${value}`
+                : `Q: ${title} \nA: ${value}`;
+
+            if (existingValues.includes(title)) {
+>>>>>>> 118c424 (new code)
                 console.log("2.1 List Feedback already recorded");
                 await findContent(currentDay, currentModule, number);
             } else {
                 await us.updateField(id, "Question Responses", newValues);
                 console.log("2.2 List New Feedback recorded");
                 await findContent(currentDay, currentModule, number);
+<<<<<<< HEAD
                 console.log("1. Updating");
+=======
+>>>>>>> 118c424 (new code)
                 await us.updateField(id, "Last_Msg", title);
             }
-
-            // if (existingValues.includes(`Day ${currentDay} -`)) {
-            //     console.log("1.1  User Feedback already recorded");
-            //     await findContent(currentDay, currentModule, number);
-            // } else {
-            //     us.updateField(id, "Feedback", newValues).then(async () => {
-            //         console.log("1.2  New User Feedback recorded");
-            //         await findContent(currentDay, currentModule, number);
-
-            //         console.log("1. Updating in list feedback");
-            //         await us.updateField(id, "Last_Msg", list_title[0]);
-            //     });
-            // }
-           
-      
-            // for (let i = 0; i < feedback.length; i++) {
-            // if (value == feedback[i]) {
-            //     console.log("Matched ", feedback[i], value);
-            //     let score = 0;
-            //     switch (value) {
-            //         case "I am not sure":
-            //             score = 1;
-            //             break;
-            //         case "No, I do not":
-            //             score = 2;
-            //             break;
-            //         case "Some parts are confusing":
-            //             score = 3;
-            //             break;
-            //         case "Yes, I do":
-            //             score = 4;
-            //             break;
-            //     }
-
-            //     let existingValues = await us.findField("Feedback", number);
-            //     console.log("existingValues ", existingValues);
-
-            //     if (existingValues == 0) {
-            //         existingValues = "";
-            //         newValues = `Day ${currentDay} - ${score}`;
-            //     } else {
-            //         newValues = `${existingValues} \n\nDay ${currentDay} - ${score}`;
-            //     }
-
-            //     if (existingValues.includes(`Day ${currentDay} -`)) {
-            //         console.log("1.1  User Feedback already recorded");
-            //         await findContent(currentDay, currentModule, number);
-            //     } else {
-            //         us.updateField(id, "Feedback", newValues).then(async () => {
-            //             console.log("1.2  New User Feedback recorded");
-            //             await findContent(currentDay, currentModule, number);
-
-            //             console.log("1. Updating in list feedback");
-            //             await us.updateField(id, "Last_Msg", list_title[0]);
-            //         });
-            //     }
-            //     break;
-            // } else {
-            //     console.log("Not Matched ", feedback[i], value);
-            // }
-            // }
         } else {
+<<<<<<< HEAD
             // Reuse already fetched correct_ans and existingValues instead of fetching again
             console.log("Correct ans ", correct_ans);
 
@@ -445,6 +434,10 @@ async function store_responses(number, value) {
 
             const isCorrect = correct_ans === value;
             const isSecondAttempt = last_msg == "Incorrect";
+=======
+            const isCorrect = correct_ans === value;
+            const isSecondAttempt = last_msg === "Incorrect";
+>>>>>>> 118c424 (new code)
 
             if (isCorrect || isSecondAttempt) {
                 let congratsMessages = [
@@ -456,12 +449,8 @@ async function store_responses(number, value) {
                 ];
 
                 if (isCorrect && !isSecondAttempt) {
-                    console.log("1st attempt correct!")
-                    
                     WA.sendText(congratsMessages[Math.floor(Math.random() * congratsMessages.length)], number);
-                    console.log(`${title} 1st attempt correct`);
                 } else if (isSecondAttempt) {
-                    console.log("correct_ans == value ", isCorrect, correct_ans, value);
                     if (isCorrect) {
                         WA.sendText(congratsMessages[Math.floor(Math.random() * congratsMessages.length)], number);
                     } else {
@@ -469,123 +458,25 @@ async function store_responses(number, value) {
                     }
                 }
 
-                const selectedOption = options[0].find(option => option === value);
-                if (selectedOption) {
-                    const newValues = existingValues ?
-                        `${existingValues}\n\nQ: ${title}\nA: ${value}` :
-                        `Q: ${title}\nA: ${value}`;
-
-                    if (existingValues.includes(title)) {
-                        console.log("2.1 List Feedback already recorded");
-                        await findContent(currentDay, currentModule, number);
-                    } else {
-                        await us.updateField(id, "Question Responses", newValues);
-                        console.log("2.2 List New Feedback recorded");
-                        await findContent(currentDay, currentModule, number);
-                        console.log("1. Updating");
-                        await us.updateField(id, "Last_Msg", title);
-                    }
+                let existingValues = record.question_responses || "";
+                if (existingValues.includes(title)) {
+                    console.log("2.1 List Feedback already recorded");
+                    await findContent(currentDay, currentModule, number);
+                } else {
+                    const newValues = existingValues 
+                        ? `${existingValues}\n\nQ: ${title}\nA: ${value}`
+                        : `Q: ${title}\nA: ${value}`;
+                    await us.updateField(id, "Question Responses", newValues);
+                    console.log("2.2 List New Feedback recorded");
+                    await findContent(currentDay, currentModule, number);
+                    await us.updateField(id, "Last_Msg", title);
                 }
             } else {
                 WA.sendText("You've entered the wrong answer. Let's try one more time. \n\nSelect the correct option from the list again.", number);
                 await us.updateField(id, "Last_Msg", "Incorrect");
             }
-
-    //         if (correct_ans == value || last_msg == "Incorrect") {
-            
-                   
-    //         if (correct_ans == value && last_msg != "Incorrect")  {      
-    //             var items = [
-    //                 'Congratulations! You got it right. 🥳',
-    //                 'That’s the correct answer. Yay! 🎉',
-    //                 'Awesome! Your answer is correct. 🎊',
-    //                 'Hey, good job! That’s the right answer Woohoo! 🤩',
-    //                 'Well done! The answer you have chosen is correct. 🎖️'
-    //             ];
-
-    //             var item = items[Math.floor(Math.random() * items.length)];
-    //             WA.sendText(item, number);
-                     
-                
-    //             console.log(`${title} 1st attempt correct`);
-    //             if (title.includes(last_msg) || last_msg == title) {
-    //                 for (let i = 0; i < options[0].length; i++) {
-    //                     if (options[0][i] == value) {
-    //                         if (existingValues == 0) {
-    //                             existingValues = "";
-    //                             newValues = `Q: ${title} \nA: ${value}`;
-    //                         } else {
-    //                             newValues = `${existingValues} \n\nQ: ${title} \nA: ${value}`;
-    //                         }
-
-    //                         if (existingValues.includes(title)) {
-    //                             console.log("2.1 List Feedback already recorded");
-    //                             await findContent(currentDay, currentModule, number);
-    //                         } else {
-    //                             us.updateField(id, "Question Responses", newValues).then(async () => {
-    //                                 console.log("2.2 List New Feedback recorded");
-    //                                 await findContent(currentDay, currentModule, number);
-    //                                 console.log("1. Updating");
-    //                                 await us.updateField(id, "Last_Msg", title);
-    //                             });
-    //                         }
-    //                     }
-    //                 }
-    //             } else {
-    //                 console.log("Feedback already stored");
-    //             }}
-    //             else if (last_msg == "Incorrect")   {    
-    //             console.log("correct_ans == value ", correct_ans == value, correct_ans, value);
-    //             if (correct_ans == value) {
-    //                 console.log("correct_ans == value ", correct_ans == value);
-    //                 var items = [
-    //                     'Congratulations! You got it right. 🥳',
-    //                     'That’s the correct answer. Yay! 🎉',
-    //                     'Awesome! Your answer is correct. 🎊',
-    //                     'Hey, good job! That’s the right answer Woohoo! 🤩',
-    //                     'Well done! The answer you have chosen is correct. 🎖️'
-    //                 ];
-
-    //                 var item = items[Math.floor(Math.random() * items.length)];
-    //                 WA.sendText(item, number);
-    //             } else {
-    //                 WA.sendText(`The correct answer is *${correct_ans}*`, number);
-    //                 }
-    //             }
-                        
-
-    //             for (let i = 0; i < options[0].length; i++) {
-    //                 if (options[0][i] == value) {
-    //                     if (existingValues == 0) {
-    //                         existingValues = "";
-    //                         newValues = `Q: ${title} \nA: ${value}`;
-    //                     } else {
-    //                         newValues = `${existingValues} \n\nQ: ${title} \nA: ${value}`;
-    //                     }
-
-    //                     console.log("existingValues ", existingValues);
-    //                     if (existingValues.includes(title)) {
-    //                         console.log("2.1 List Feedback already recorded");
-    //                         await findContent(currentDay, currentModule, number);
-    //                     } else {
-    //                         us.updateField(id, "Question Responses", newValues).then(async () => {
-    //                             console.log("2.2 List New Feedback recorded");
-    //                             await findContent(currentDay, currentModule, number);
-
-    //                             console.log("1. Updating");
-    //                             await us.updateField(id, "Last_Msg", title);
-    //                         });
-    //                     }
-    //                 }
-    //             }
-    //         }
-    //         else {
-                
-    //             WA.sendText("You've entered the wrong answer. Let's try one more time. \n\nSelect the correct option from the list again.", number);
-    //             await us.updateField(id, "Last_Msg", "Incorrect");
-                
-    //         }
         }
+<<<<<<< HEAD
     }
 }
 async function store_intResponse(number, value) {
@@ -600,11 +491,24 @@ async function store_intResponse(number, value) {
     if (!response.ok) {
         console.error("Error fetching records:", response.statusText);
         return;
+=======
+    } catch (error) {
+        console.error('Error in store_responses:', error);
+>>>>>>> 118c424 (new code)
     }
+}
 
-    const data = await response.json();
-    const records = data.records;
+async function store_intResponse(number, value) {
+    try {
+        const [records] = await db.query('SELECT * FROM students WHERE phone = ?', [number]);
+        if (records.length === 0) return;
+        const record = records[0];
+        const id = record.id;
+        const currentModule = record.next_module;
+        const currentDay = record.next_day;
+        const existingValues = record.interactive_responses || "";
 
+<<<<<<< HEAD
     // Use for...of instead of forEach with async
     for (const record of records) {
         let id = record.id;
@@ -656,16 +560,36 @@ async function store_intResponse(number, value) {
                         await find_IntContent(currentDay, currentModule, number);
                     }
                     break;
+=======
+        const res = await us.findInteractive(currentDay, currentModule, number);
+        if (Array.isArray(res)) {
+            const [title, options] = res;
+            if (options.includes(value)) {
+                let newValues = existingValues
+                    ? `${existingValues}\n\n${title}\n${value}`
+                    : `${title}\n${value}`;
+
+                if (existingValues.includes(title)) {
+                    console.log("Interactive Feedback already recorded");
+                    await find_IntContent(currentDay, currentModule, number);
+                } else {
+                    await us.updateField(id, "Interactive_Responses", newValues);
+                    console.log("New Interactive Feedback recorded");
+                    await find_IntContent(currentDay, currentModule, number);
+>>>>>>> 118c424 (new code)
                 }
             }
-        } else {
-            console.log("List empty");
         }
+<<<<<<< HEAD
+=======
+    } catch (error) {
+        console.error('Error in store_intResponse:', error);
+>>>>>>> 118c424 (new code)
     }
 }
 
-
 async function store_quesResponse(number, value) {
+<<<<<<< HEAD
     // var course_tn = await us.findTable(number)
 
     const response = await fetch(`https://api.airtable.com/v0/${BASE_ID}/${student_table}?filterByFormula=({Phone} = ${number})&view=Grid view`, {
@@ -697,15 +621,31 @@ async function store_quesResponse(number, value) {
                 console.error("Error in store_quesResponse ", e);
             }
 
+=======
+    try {
+        const [records] = await db.query('SELECT * FROM students WHERE phone = ?', [number]);
+        if (records.length === 0) return;
+        const record = records[0];
+        const id = record.id;
+        const currentModule = record.next_module;
+        const currentDay = record.next_day;
+        let last_msg = record.last_msg;
+
+        if (currentModule !== undefined) {
+            let ques = await us.findQuestion(currentDay, currentModule, number);
+>>>>>>> 118c424 (new code)
             if (typeof last_msg === 'string') {
                 last_msg = last_msg.replace("Q: ", "");
-                console.log("Last msg and question in store_quesResponse ", last_msg, ques);
-                
-            }            
+            }
 
             if (last_msg === ques) {
                 ques = ques.replace("\n\nShare your thoughts!", " ");
+                let existingValues = record.responses || "";
+                let newValues = existingValues
+                    ? `${existingValues} \n\nQ: ${ques} \nA: ${value}`
+                    : `Q: ${ques} \nA: ${value}`;
 
+<<<<<<< HEAD
                 let existingValues = await us.findQuesRecord(id);
 
                 console.log("ques -  ", ques);
@@ -741,19 +681,34 @@ async function store_quesResponse(number, value) {
                         console.log("3. New Feedback recorded");
                         await find_QContent(currentDay, currentModule, number);
                     }
+=======
+                if (existingValues.includes(ques)) {
+                    console.log("1.2 Feedback already recorded");
+                    await find_QContent(currentDay, currentModule, number);
+                } else {
+                    await us.updateField(id, "Responses", newValues);
+                    console.log("3. New Feedback recorded");
+                    await find_QContent(currentDay, currentModule, number);
+>>>>>>> 118c424 (new code)
                 }
             } else {
                 console.log("No ques");
             }
         }
+<<<<<<< HEAD
+=======
+    } catch (error) {
+        console.error('Error in store_quesResponse:', error);
+>>>>>>> 118c424 (new code)
     }
 }
 
-
 async function findContent(currentDay, module_No, number) {
-    var course_tn = await us.findTable(number);
-    let id = await us.getID(number).then().catch(e => console.log(e));
+    try {
+        const id = await us.getID(number);
+        const course_tn = await us.findTable(number);
 
+<<<<<<< HEAD
     const response = await fetch(`https://api.airtable.com/v0/${BASE_ID}/${course_tn}?filterByFormula=({Day} = ${currentDay})&view=Grid view`, {
         headers: {
             Authorization: `Bearer ${API_KEY}`
@@ -771,27 +726,76 @@ async function findContent(currentDay, module_No, number) {
     // Process first record only (we expect one record per day)
     if (records.length > 0) {
         const record = records[0];
+=======
+>>>>>>> 118c424 (new code)
         setTimeout(async () => {
-            for (let i = module_No + 1;i<= 5; i++) {
-                let module_text = record.fields[`Module ${i} Text`];
-                let module_list = record.fields[`Module ${i} LTitle`];
-                console.log("After ", i);
-                if (module_text === undefined && !module_list) {
-                    console.log(module_text, module_list);
-                    if (i >= 5) {
-                        await markModuleComplete_v2(i, number).then().catch(error => console.log("v2 ", error));
+            let hasNextModules = false;
+            for (let i = module_No + 1; i <= 5; i++) {
+                const [rows] = await db.query(
+                    `SELECT module_text, list_title 
+                     FROM course_content 
+                     WHERE course_name = ? AND day_number = ? AND module_number = ?`,
+                    [course_tn, currentDay, i]
+                );
+                if (rows && rows.length > 0 && (rows[0].module_text || rows[0].list_title)) {
+                    hasNextModules = true;
+                    break;
+                }
+            }
+
+            if (!hasNextModules) {
+                await markModuleComplete_v2(5, number);
+            } else {
+                const hTxt = `Let's move forward!`;
+                const bTxt = `Click Next.`;
+                const btnTxt = "Next.";
+                await us.updateField(id, "Last_Msg", btnTxt);
+                WA.sendInteractiveButtonsMessage(hTxt, bTxt, btnTxt, number);
+            }
+        }, 500);
+    } catch (error) {
+        console.error('Error in findContent:', error);
+    }
+}
+
+async function find_IntContent(currentDay, module_No, number) {
+    try {
+        const id = await us.getID(number);
+        const course_tn = await us.findTable(number);
+        
+        const [rows] = await db.query(
+            `SELECT list_title FROM course_content 
+             WHERE course_name = ? AND day_number = ? AND module_number = ?`,
+            [course_tn, currentDay, module_No]
+        );
+
+        if (rows && rows.length > 0 && rows[0].list_title) {
+            await sendList(currentDay, module_No, number);
+        } else {
+            setTimeout(async () => {
+                let hasNextModules = false;
+                for (let i = module_No + 1; i <= 6; i++) {
+                    const [subRows] = await db.query(
+                        `SELECT module_text, list_title FROM course_content 
+                         WHERE course_name = ? AND day_number = ? AND module_number = ?`,
+                        [course_tn, currentDay, i]
+                    );
+                    if (subRows && subRows.length > 0 && (subRows[0].module_text || subRows[0].list_title)) {
+                        hasNextModules = true;
+                        break;
                     }
+                }
+
+                if (!hasNextModules) {
+                    await markModuleComplete_v2(5, number);
                 } else {
                     const hTxt = `Let's move forward!`;
                     const bTxt = `Click Next.`;
                     const btnTxt = "Next.";
-                    setTimeout(() => {
-                        console.log("2. Delay of Finish Interactive Button - find_QContent");
-                        us.updateField(id, "Last_Msg", btnTxt);
-                        WA.sendInteractiveButtonsMessage(hTxt, bTxt, btnTxt, number);
-                    }, 5000);
-                    break;
+                    await us.updateField(id, "Last_Msg", btnTxt);
+                    WA.sendInteractiveButtonsMessage(hTxt, bTxt, btnTxt, number);
                 }
+<<<<<<< HEAD
             }
         }, 500);
     }
@@ -803,13 +807,14 @@ async function find_IntContent(currentDay, module_No, number) {
     const response = await fetch(`https://api.airtable.com/v0/${BASE_ID}/${course_tn}?filterByFormula=({Day} = ${currentDay})&view=Grid view`, {
         headers: {
             Authorization: `Bearer ${API_KEY}`
+=======
+            }, 5000);
+>>>>>>> 118c424 (new code)
         }
-    });
-
-    if (!response.ok) {
-        console.error("Error fetching records:", response.statusText);
-        return;
+    } catch (error) {
+        console.error('Error in find_IntContent:', error);
     }
+<<<<<<< HEAD
 
     const data = await response.json();
     const records = data.records;
@@ -854,15 +859,16 @@ async function find_IntContent(currentDay, module_No, number) {
             }, 500);
         }
     }
+=======
+>>>>>>> 118c424 (new code)
 }
-
 
 async function find_QContent(currentDay, module_No, number) {
     try {
-        // Fetch the course table name
-        var course_tn = await us.findTable(number)
-        console.log("findModule ", course_tn)
+        const id = await us.getID(number);
+        const course_tn = await us.findTable(number);
 
+<<<<<<< HEAD
         const response = await fetch(`https://api.airtable.com/v0/${BASE_ID}/${course_tn}/?filterByFormula=Day%3D${currentDay}`, {
             method: 'GET',
             headers: {
@@ -942,352 +948,232 @@ async function find_QContent(currentDay, module_No, number) {
 
                         break; // Exit the loop after sending the interactive message
                     }
+=======
+        setTimeout(async () => {
+            let hasNextModules = false;
+            for (let i = module_No + 1; i <= 5; i++) {
+                const [rows] = await db.query(
+                    `SELECT module_text, list_title FROM course_content 
+                     WHERE course_name = ? AND day_number = ? AND module_number = ?`,
+                    [course_tn, currentDay, i]
+                );
+                if (rows && rows.length > 0 && (rows[0].module_text || rows[0].list_title)) {
+                    hasNextModules = true;
+                    break;
+>>>>>>> 118c424 (new code)
                 }
-            }, 3000);
-            // }
-        };
-    } catch (error) {
-        console.error("Error in find_QContent:", error);
-    }
+            }
 
+            if (!hasNextModules) {
+                await markModuleComplete_v2(5, number);
+            } else {
+                const hTxt = `Let's move forward!`;
+                const bTxt = `Click Next.`;
+                const btnTxt = "Next.";
+                await us.updateField(id, "Last_Msg", btnTxt);
+                WA.sendInteractiveButtonsMessage(hTxt, bTxt, btnTxt, number);
+            }
+        }, 3000);
+    } catch (error) {
+        console.error('Error in find_QContent:', error);
+    }
 }
 
-//Find modules
-
 async function findModule(currentDay, module_No, number) {
-    var course_tn = await us.findTable(number)
-    console.log("findModule ", module_No, currentDay)
+    try {
+        const id = await us.getID(number);
+        const course_tn = await us.findTable(number);
 
+<<<<<<< HEAD
     const response = await fetch(`https://api.airtable.com/v0/${BASE_ID}/${course_tn}?filterByFormula=Day%3D${currentDay}`, {
         method: 'GET',
         headers: {
             'Authorization': `Bearer ${API_KEY}`,
             'Content-Type': 'application/json'
+=======
+        console.log("Executing FindModule for Day:", currentDay, "Module:", module_No);
+
+        const [rows] = await db.query(
+            `SELECT * FROM course_content 
+             WHERE course_name = ? AND day_number = ? AND module_number = ?`,
+            [course_tn, currentDay, module_No]
+        );
+
+        if (rows.length === 0) {
+            await markModuleComplete(number);
+            return;
+>>>>>>> 118c424 (new code)
         }
-    });
 
-    if (!response.ok) {
-        return 'Failed to fetch records from Airtable'
-    }
-
-    let data = await response.json();
-    let records = data.records;
-
-    // console.log(records)
-    // Process each record
-    for (let record of records) {
-        let id = await us.getID(number).catch(e => console.log(e));
-
-        let day = record.fields["Day"];
-        let module_text = record.fields[`Module ${module_No} Text`];
-        let module_title = record.fields[`Module ${module_No} LTitle`];
-        let module_link = record.fields[`Module ${module_No} Link`];
-        let module_next_msg = record.fields[`Module ${module_No} next`];
-        let interactive_body = record.fields[`Module ${module_No} iBody`];
-        let module_ques = record.fields[`Module ${module_No} Question`];
-        let module_split = module_text ? module_text.split("#") : [];
-
-        // let module_split = []
-        if (module_text != undefined) {
-            module_split = module_text.split("#")
-        }
-        console.log("Executing FindModule ",)
-
+        const record = rows[0];
+        const module_text = record.module_text;
+        const module_title = record.list_title;
+        const module_link = record.file_url;
+        const interactive_body = record.ibody;
+        const module_ques = record.question;
+        const module_split = module_text ? module_text.split('#') : [];
 
         if (!module_text && !!module_ques) {
-            console.log("Ques not empty - Module Text Empty")
-
+            console.log("Ques not empty - Module Text Empty");
             setTimeout(() => {
-                console.log("4. Delay of media in Ques not empty - Module Text Empty ")
-                sendContent.sendMediaFile(day, module_No, number).then().catch(e => console.log("Error" + e))
-            }, 100)
-
-            await sendQues(currentDay, module_No, number)
-
-
+                sendContent.sendMediaFile(currentDay, module_No, number).catch(e => console.log("Error" + e));
+            }, 100);
+            await sendQues(currentDay, module_No, number);
         }
         else if (!!interactive_body && !!module_text) {
-            data = module_text
-
             let index = 0;
-            console.log("1. Module Split",)
-
-            await sendSplitMessages(module_split, index, day, module_No, number)
-
+            await sendSplitMessages(module_split, index, currentDay, module_No, number);
             if (!!module_link) {
-                console.log("1. Module link not null")
-
-
                 setTimeout(() => {
-                    WA.sendText(module_link, number)
-                }, 2000)
-
-                console.log("7. Update as last message ")
-
-                await us.updateField(id, "Last_Msg", data)
-
-
+                    WA.sendText(module_link, number);
+                }, 2000);
             }
-            console.log("8. Update as last message ")
-
-            await us.updateField(id, "Last_Msg", data)
-
-            await sendIMsg(currentDay, module_No, number)
-
+            await us.updateField(id, "Last_Msg", module_text);
+            await sendIMsg(currentDay, module_No, number);
         }
-
-
         else if (!!module_title && !module_text) {
-            console.log("!!module_title && !module_text")
-            await sendList(currentDay, module_No, number)
-
+            await sendList(currentDay, module_No, number);
         }
         else if (!!interactive_body && !module_text) {
-            console.log("Delay of media in not empty link - interactive not empty")
-            sendContent.sendMediaFile(day, module_No, number).then().catch(e => console.log("Error" + e))
-
-            await sendIMsg(currentDay, module_No, number)
-
+            await sendContent.sendMediaFile(currentDay, module_No, number).catch(e => console.log("Error" + e));
+            await sendIMsg(currentDay, module_No, number);
         }
-
         else if (!!module_text && !module_title) {
-            console.log("!!module_text && !module_title ")
-
             if (!!interactive_body) {
                 setTimeout(() => {
-                    console.log("2. Delay of media in not empty link ")
-                    sendContent.sendMediaFile(day, module_No, number).then().catch(e => console.log("Error" + e))
-                }, 10000)
-
-                await sendIMsg(currentDay, module_No, number)
+                    sendContent.sendMediaFile(currentDay, module_No, number).catch(e => console.log("Error" + e));
+                }, 10000);
+                await sendIMsg(currentDay, module_No, number);
             }
-            // findContent(currentDay, module_No, number)
             else if (!!module_link) {
-
-                data = module_text
                 let index = 0;
-
-                console.log("2. Split ")
-                await sendSplitMessages(module_split, index, day, module_No, number)
-
-
-                console.log("1. Update as last message ")
-
-                await us.updateField(id, "Last_Msg", data)
-
+                await sendSplitMessages(module_split, index, currentDay, module_No, number);
+                await us.updateField(id, "Last_Msg", module_text);
 
                 if (!!module_ques) {
-                    console.log("1. Ques not empty ")
-
                     setTimeout(async () => {
-                        await sendQues(currentDay, module_No, number)
-                    }, 5000)
-
-                }
-                else {
-                    console.log("Module link not empty ")
+                        await sendQues(currentDay, module_No, number);
+                    }, 5000);
+                } else {
                     setTimeout(() => {
-                        console.log("3. Delay of link ")
-                        WA.sendText(module_link, number)
+                        WA.sendText(module_link, number);
+                    }, 2500);
 
-
-                    }, 2500)
-
-                    for (let i = module_No + 1; i <= 5; i++) {
-                        let module_text = record.fields["Module " + i + " Text"]
-                        console.log("1. After ", i)
-                        console.log("module_text ", module_text)
-                        let module_list = record.fields["Module " + i + " LTitle"]
-
-
-                        if (module_text == undefined && !module_list) {
-
-                            console.log(module_text)
-
-
-                            if (i >= 5) {
-                                await markModuleComplete_v2(i, number).then().catch(error => console.log("v2.1 ", error))
+                    // Check for next module availability
+                    setTimeout(async () => {
+                        let hasNextModules = false;
+                        for (let i = module_No + 1; i <= 5; i++) {
+                            const [subRows] = await db.query(
+                                `SELECT module_text, list_title FROM course_content 
+                                 WHERE course_name = ? AND day_number = ? AND module_number = ?`,
+                                [course_tn, currentDay, i]
+                            );
+                            if (subRows && subRows.length > 0 && (subRows[0].module_text || subRows[0].list_title)) {
+                                hasNextModules = true;
+                                break;
                             }
-
-                        }
-                        else {
-                            const hTxt = module_next_msg
-                            // const bTxt = Click Next.
-                            const btnTxt = "Next."
-
-                            setTimeout(() => {
-                                console.log("2. Delay of Finish Interactive Button - Module")
-                                WA.sendInteractiveButtonsMessage(hTxt, bTxt, btnTxt, number)
-                            }, 0)
-                            break
-
                         }
 
-
-                    }
+                        if (!hasNextModules) {
+                            await markModuleComplete_v2(5, number);
+                        } else {
+                            const hTxt = "To Learn More!";
+                            const bTxt = "Click Next.";
+                            const btnTxt = "Next.";
+                            WA.sendInteractiveButtonsMessage(hTxt, bTxt, btnTxt, number);
+                        }
+                    }, 2500);
                 }
             }
             else {
-
-                let data = module_text
-
-
                 let index = 0;
-                console.log("1. module_split")
-                await sendSplitMessages(module_split, index, day, module_No, number)
-
-
-                console.log("2. Update as last message ")
-                await us.updateField(id, "Last_Msg", data)
-
+                await sendSplitMessages(module_split, index, currentDay, module_No, number);
+                await us.updateField(id, "Last_Msg", module_text);
 
                 if (!!module_ques) {
-                    console.log("2. Ques not empty ")
                     setTimeout(async () => {
-                        await sendQues(currentDay, module_No, number)
-                    }, 5000)
+                        await sendQues(currentDay, module_No, number);
+                    }, 5000);
+                } else {
+                    let next_m = module_No + 1;
+                    const [nextRows] = await db.query(
+                        `SELECT question, module_text FROM course_content 
+                         WHERE course_name = ? AND day_number = ? AND module_number = ?`,
+                        [course_tn, currentDay, next_m]
+                    );
 
-                }
-                else {
-
-                    console.log("Module link null ", module_No)
-                    let next_m = module_No + 1
-                    console.log("Module link null nm ", next_m)
-                    let module_ques = record.fields["Module " + next_m + " Question"]
-                    let module_text = record.fields["Module " + next_m + " Text"]
-
-                    if (!!module_ques && module_text == undefined) {
-                        console.log("3. Ques not empty ", module_text)
-
-                        us.updateField(id, "Next Module", module_No + 1)
-                        us.updateField(id, "Module Completed", module_No)
-
+                    if (nextRows && nextRows.length > 0 && nextRows[0].question && !nextRows[0].module_text) {
+                        await us.updateField(id, "Next Module", next_m);
+                        await us.updateField(id, "Module Completed", module_No);
                         setTimeout(async () => {
-                            await sendQues(currentDay, module_No + 1, number)
-                        }, 4000)
-
-
-                    }
-                    else {
-
+                            await sendQues(currentDay, next_m, number);
+                        }, 4000);
+                    } else {
                         setTimeout(async () => {
+                            let hasNextModules = false;
                             for (let i = module_No + 1; i <= 5; i++) {
-                                let module_text = record.fields["Module " + i + " Text"]
-                                console.log("1. After ", i)
-                                let module_list = record.fields["Module " + i + " LTitle"]
-
-
-                                if (module_text == undefined && !module_list) {
-                                    console.log(module_text, module_ques)
-
-
-                                    if (i >= 5) {
-                                        await markModuleComplete_v2(i, number).then().catch(error => console.log("v2.1 ", error))
-                                    }
-
-                                }
-                                else {
-                                    let hTxt = ""
-                                    console.log("Module Next 1 ", module_next_msg)
-                                    if( module_next_msg != null){
-                                        hTxt = module_next_msg
-                                    }
-                                    else {
-                                        hTxt ="To Learn More!"
-                                    }
-                                    const bTxt = "Click Next."
-                                    const btnTxt = "Next."
-
-                                    setTimeout(() => {
-                                        console.log("2. Delay of Finish Interactive Button - FindModule")
-                                        WA.sendInteractiveButtonsMessage(hTxt, bTxt, btnTxt, number)
-
-                                    }, 6000)
-                                    break
-
+                                const [subRows] = await db.query(
+                                    `SELECT module_text, list_title FROM course_content 
+                                     WHERE course_name = ? AND day_number = ? AND module_number = ?`,
+                                    [course_tn, currentDay, i]
+                                );
+                                if (subRows && subRows.length > 0 && (subRows[0].module_text || subRows[0].list_title)) {
+                                    hasNextModules = true;
+                                    break;
                                 }
                             }
-                        }, 15000)
 
+                            if (!hasNextModules) {
+                                await markModuleComplete_v2(5, number);
+                            } else {
+                                const hTxt = "To Learn More!";
+                                const bTxt = "Click Next.";
+                                const btnTxt = "Next.";
+                                setTimeout(() => {
+                                    WA.sendInteractiveButtonsMessage(hTxt, bTxt, btnTxt, number);
+                                }, 6000);
+                            }
+                        }, 15000);
                     }
-
-
                 }
-
-
-
             }
-
-
         }
         else if (!!module_text && !!module_title) {
-
-            data = module_text
-
-            console.log("3. Update as last message ")
-            await us.updateField(id, "Last_Msg", data)
-
+            await us.updateField(id, "Last_Msg", module_text);
             let index = 0;
-
-            await sendSplitMessages(module_split, index, day, module_No, number)
-
+            await sendSplitMessages(module_split, index, currentDay, module_No, number);
             setTimeout(async () => {
-                await sendList(currentDay, module_No, number)
-
-            }, 2000)
+                await sendList(currentDay, module_No, number);
+            }, 2000);
         }
-
         else {
-            markModuleComplete(number)
+            await markModuleComplete(number);
         }
-
+    } catch (error) {
+        console.error("Error in findModule:", error);
     }
 }
-
-
 
 async function sendSplitMessages(module_split, index, day, module_No, number) {
     const awaitTimeout = delay => new Promise(resolve => setTimeout(resolve, delay));
+    const len = module_split.length;
 
-    for (index; index < module_split.length; index++) {
-        try {
-            console.log("Sending module split message ", index);
-
-            if (index === 0) {
-                console.log('Sending initial message immediately');
-                await WA.sendText(module_split[index], number);
-            } else {
-                if (module_split[index].includes("Image")) {
-                    console.log("Handling Image message");
-
-                    // Extracting image index from the message
-                    let image_index = module_split[index].split(" ");
-                    let imageIndex = Number(image_index[1]);
-
-                    console.log("Image Index: ", imageIndex);
-
-                    // Delay before sending the media file
-                    await awaitTimeout(2000);
-
-                    // Assuming sendContent.sendMediaFile_v2 is an asynchronous function that sends media files
-                    await sendContent.sendMediaFile_v2(imageIndex, day, module_No, number);
-                } else {
-                    // Regular text message with a longer delay
-                    console.log("Sending regular text message");
-
-                    await awaitTimeout(10000);
-                    await WA.sendText(module_split[index], number);
-                }
-            }
-        } catch (error) {
-            console.error("Error sending text:", error);
+    for (let i = index; i < len; i++) {
+        const item = module_split[i].trim();
+        if (item === "Image" || item === "image") {
+            console.log("Executing Media");
+            await sendContent.sendMediaFile(day, module_No, number).catch(e => console.log(e));
+        } else if (item.length > 0) {
+            console.log("Executing Text segment");
+            await WA.sendText(item, number);
         }
+        await awaitTimeout(3000);
     }
 }
 
-//Find Module No in students table and send it
 async function sendModuleContent(number) {
     console.log("Entered sendModuleContent");
+<<<<<<< HEAD
 
     // const records_Student = await baseId('Test').select({
     //     filterByFormula: "({Phone} =" + number + ")",
@@ -1302,62 +1188,56 @@ async function sendModuleContent(number) {
         headers: {
             'Authorization': `Bearer ${API_KEY}`,
             'Content-Type': 'application/json'
+=======
+    try {
+        const [records] = await db.query('SELECT * FROM students WHERE phone = ?', [number]);
+        if (records.length === 0) {
+            console.log("No student records found for the given number");
+            return;
+>>>>>>> 118c424 (new code)
         }
-    });
-    console.log("Response ", response)
 
-    if (!response.ok) {
-        return 'Failed to fetch records from Airtable'
-    }
-
-    let data = await response.json();
-    let records = data.records;
-
-    console.log(records)
-    // Process each record
-    for (let record of records) {
-        console.log("Processing student record");
-
-        let id = await us.getID(number).catch(e => console.log(e));
-        let cDay = record.fields["Next Day"];
-        let next_module = record.fields["Next Module"];
-        let completed_module = record.fields["Module Completed"];
+        const record = records[0];
+        const id = record.id;
+        const cDay = record.next_day;
+        const next_module = record.next_module;
+        const completed_module = record.module_completed;
 
         if (next_module !== undefined) {
             if (cDay === 5) {
                 console.log("Executing outro for day 5");
-                // await outro.outro_flow(cDay, number); // Uncomment to execute outro flow
             } else if (next_module === 0) {
                 console.log("Next module is 0, finding day content");
-                findDay(cDay, number);
+                await findDay(cDay, number);
             } else {
                 if (completed_module === 0 && next_module === 1) {
                     console.log(`Starting Day ${cDay} of ${number}`);
                     await sendStartDayTopic(next_module, cDay, number);
                 } else {
                     console.log(`Finding module ${next_module} for day ${cDay}`);
-                    findModule(cDay, next_module, number);
+                    await findModule(cDay, next_module, number);
                 }
             }
-        } else {
-            console.log("Next module is undefined");
         }
-    };
+    } catch (error) {
+        console.error('Error in sendModuleContent:', error);
+    }
 }
 
 async function sendStartDayTopic(next_module, cDay, number) {
-    // let course_tn = await us.findTable(number);
-    // let id = await us.getID(number).catch(e => console.log(e));
+    try {
+        const course_tn = await us.findTable(number);
+        const id = await us.getID(number);
 
-    // const records = await baseId(course_tn).select({
-    //     filterByFormula: "({Day} =" + cDay + ")",
-    //     view: "Grid view",
-    // }).all();
+        const [rows] = await db.query(
+            `SELECT list_title FROM course_content 
+             WHERE course_name = ? AND day_number = ? AND module_number = 1`,
+            [course_tn, cDay]
+        );
 
-    // records.forEach(async function (record) {
-    var course_tn = await us.findTable(number)
-    // console.log("findModule ", module_No, currentDay)
+        let day_topic = rows.length > 0 ? rows[0].list_title : undefined;
 
+<<<<<<< HEAD
     const response = await fetch(`https://api.airtable.com/v0/${BASE_ID}/${course_tn}?filterByFormula=Day%3D${cDay}`, {
         method: 'GET',
         headers: {
@@ -1398,21 +1278,23 @@ async function sendStartDayTopic(next_module, cDay, number) {
                 .catch(e => {
                     console.log("Error sending interactive message:", e);
                 });
+=======
+        if (day_topic !== undefined && day_topic !== null) {
+            await WA.sendInteractiveButtonsMessage(" ", day_topic, "Let's Begin", number);
+            console.log("Day Topic interactive sent successfully");
+            await us.updateField(id, "Last_Msg", day_topic);
+>>>>>>> 118c424 (new code)
         } else {
             console.log("Day topic is undefined. Proceeding to find module.");
-            await findModule(cDay, next_module, number)
-                .then(() => {
-                    console.log("findModule called successfully");
-                })
-                .catch(e => {
-                    console.log("Error in findModule:", e);
-                });
+            await findModule(cDay, next_module, number);
         }
-    };
+    } catch (error) {
+        console.error('Error in sendStartDayTopic:', error);
+    }
 }
 
-
 async function markModuleComplete(number) {
+<<<<<<< HEAD
     const response = await fetch(`https://api.airtable.com/v0/${BASE_ID}/${student_table}?filterByFormula=Phone%3D${number}`, {
         method: 'GET',
         headers: {
@@ -1435,33 +1317,37 @@ async function markModuleComplete(number) {
         var current_module = Number(record.fields["Next Module"]);
         var cDay = Number(record.fields["Next Day"]);
         var next_module = current_module + 1;
+=======
+    try {
+        const [records] = await db.query('SELECT * FROM students WHERE phone = ?', [number]);
+        if (records.length === 0) return;
+        const record = records[0];
+        const id = record.id;
+        const current_module = Number(record.next_module);
+        const cDay = Number(record.next_day);
+        const next_module = current_module + 1;
+>>>>>>> 118c424 (new code)
 
         console.log("Entered markModuleComplete: Next Module - ", next_module, " Current Module - ", current_module);
 
         if (next_module >= 6) {
             console.log("Module series completed. Updating fields.");
-
-            // Update fields for module completion
             await us.updateField(id, "Module Completed", current_module);
             await us.updateField(id, "Next Module", 0);
-
-            // Proceed to find the next day's content
-            findDay(cDay, number);
+            await findDay(cDay, number);
         } else {
             console.log("Module in progress. Updating fields and finding next module.");
-
-            // Update fields for current module completion and next module
             await us.updateField(id, "Module Completed", current_module);
             await us.updateField(id, "Next Module", next_module);
-
-            // Proceed to find the next module's content
-            findModule(cDay, next_module, number);
+            await findModule(cDay, next_module, number);
         }
-    };
+    } catch (error) {
+        console.error('Error in markModuleComplete:', error);
+    }
 }
 
-
 async function markModuleComplete_v2(c_m, number) {
+<<<<<<< HEAD
     // const records_Student = await baseId('Test').select({
     //     filterByFormula: "({Phone} =" + number + ")",
     //     view: "Grid view",
@@ -1490,32 +1376,42 @@ async function markModuleComplete_v2(c_m, number) {
         var current_module = c_m;
         var cDay = Number(record.fields["Next Day"]);
         var next_module = current_module + 1;
+=======
+    try {
+        const [records] = await db.query('SELECT * FROM students WHERE phone = ?', [number]);
+        if (records.length === 0) return;
+        const record = records[0];
+        const id = record.id;
+        const current_module = c_m;
+        const cDay = Number(record.next_day);
+        const next_module = current_module + 1;
+>>>>>>> 118c424 (new code)
 
         console.log("Entered markModuleComplete v2: Next Module - ", next_module, " Current Module - ", current_module);
 
         if (next_module >= 7) {
             console.log("Module series completed. Updating fields.");
-
-            // Update fields for module completion
             await us.updateField(id, "Module Completed", current_module);
-
-            // if (c_m === 6) {
-                await us.updateField(id, "Next Module", 0);
-                findDay(cDay, number);
-            // }
-
+            await us.updateField(id, "Next Module", 0);
+            await findDay(cDay, number);
         } else {
             console.log("Module in progress. Updating fields and finding next module.");
-
-            // Update fields for current module completion and next module
             await us.updateField(id, "Next Module", next_module);
             await us.updateField(id, "Module Completed", current_module);
-
-            // Proceed to find the next module's content
-            findModule(cDay, next_module, number);
+            await findModule(cDay, next_module, number);
         }
-    };
+    } catch (error) {
+        console.error('Error in markModuleComplete_v2:', error);
+    }
 }
 
-
-module.exports = { markDayComplete, sendModuleContent, markModuleComplete, store_responses, store_intResponse, store_quesResponse, sendList, findModule }
+module.exports = {
+    markDayComplete,
+    sendModuleContent,
+    markModuleComplete,
+    store_responses,
+    store_intResponse,
+    store_quesResponse,
+    sendList,
+    findModule
+};
